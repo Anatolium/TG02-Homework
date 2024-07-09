@@ -99,7 +99,7 @@ async def react_photo(message: Message):
     answer_list = ['Ого, какая фотка!', 'Непонятно, что это такое', 'Не отправляй мне такое больше']
     rand_answer = random.choice(answer_list)
     await message.answer(rand_answer)
-    await bot.download(message.photo[-1], destination=f'tmp/{message.photo[-1].file_id}.jpg')
+    await bot.download(message.photo[-1], destination=f'img/{message.photo[-1].file_id}.jpg')
 
 
 # @dp.message(Command('photo', prefix='&'))
