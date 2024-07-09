@@ -12,6 +12,40 @@ from config import TOKEN
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
+input_text = "Добрый день"
+
+# Декоратор, регистрирующий обработчик для команды /start
+@dp.message(CommandStart())
+async def start(message: Message):
+    await message.answer(f"Приветик, {message.from_user.first_name}!")
+
+
+# Декоратор, регистрирующий обработчик для команды /help
+@dp.message(Command('help'))
+async def f_help(message: Message):
+    await message.answer(
+        "Бот умеет выполнять команды:\n/start\n/help\n/photo\n/meteo\n/video\n/audio\n/voice\n/doc\n/training\n/beep")
+
+
+# Декоратор, регистрирующий обработчик для сообщений, текст которых равен "Что такое ИИ?"
+@dp.message(F.text == "Что такое ИИ?")
+async def aitext(message: Message):
+    await message.answer('Искусственный интеллект – это свойство искусственных интеллектуальных систем выполнять'
+                         ' творческие функции, которые традиционно считаются прерогативой человека; наука и технология'
+                         ' создания интеллектуальных машин, особенно интеллектуальных компьютерных программ')
+
+
+@dp.message(Command('photo'))
+async def photo(message: Message):
+    photos = ["https://sr.gallerix.ru/_EX/1593896443/655331420.jpg",
+              "https://sr.gallerix.ru/M/1161425349/2468.jpg",
+              "https://sr.gallerix.ru/V/369985082/2129753821.jpg",
+              "https://sr.gallerix.ru/D/825575191/1663997468.jpg",
+              "https://sr.gallerix.ru/_EX/1124510458/768903337.jpg",
+              ]
+    random_photo = random.choice(photos)
+    await message.answer_photo(photo=random_photo, caption='Это супер крутая картинка')
+
 
 @dp.message(Command('video'))
 async def video(message: Message):
@@ -36,12 +70,6 @@ async def training(message: Message):
     random_training = random.choice(training_list)
     await message.answer(f"Это ваша тренировка на сегодня:\n{random_training}")
 
-    # tts = gTTS(text=random_training, lang='ru')
-    # tts.save("training.mp3")
-    # audio_file = FSInputFile("training.mp3")
-    # await bot.send_audio(message.chat.id, audio_file)
-    # os.remove("training.mp3")
-
     tts = gTTS(text=random_training, lang='ru')
     tts.save("training.ogg")
     voice_file = FSInputFile("training.ogg")
@@ -49,8 +77,8 @@ async def training(message: Message):
     os.remove("training.ogg")
 
 
-@dp.message(Command('voice'))
-async def voice(message: Message):
+@dp.message(Command('beep'))
+async def beep(message: Message):
     sound = FSInputFile("media/sample.ogg")
     await message.answer_voice(sound)
 
@@ -61,14 +89,14 @@ async def doc(message: Message):
     await bot.send_document(message.chat.id, doc_file)
 
 
-# ----------------------------------------------------------------------
-def translate_text(en_text):
+# ---------- TG01 Прогноз погоды с использованием API ----------
+
+def translate_text_ru(en_text):
     translator = Translator()
     ru_text = translator.translate(en_text, src='en', dest='ru').text
     return ru_text
 
 
-# Декоратор, регистрирующий обработчик для команды /meteo
 @dp.message(Command('meteo'))
 async def f_meteo(message: Message):
     city = "Москва"
@@ -77,23 +105,16 @@ async def f_meteo(message: Message):
     response = requests.get(url)
     weather = response.json()
 
-    translated_city = translate_text(weather['name'])
+    translated_city = translate_text_ru(weather['name'])
     text_1 = f"Погода в городе {translated_city}"
     text_2 = f"Температура: {weather['main']['temp']}°C"
-    translated_weather = translate_text(weather['weather'][0]['description'])
+    translated_weather = translate_text_ru(weather['weather'][0]['description'])
     text_3 = f"Погода: {translated_weather}"
     await message.answer(f"{text_1}:\n{text_2}\n{text_3}")
 
 
-# Декоратор, регистрирующий обработчик для сообщений, текст которых равен "Что такое ИИ?"
-@dp.message(F.text == "Что такое ИИ?")
-async def aitext(message: Message):
-    await message.answer('Искусственный интеллект – это свойство искусственных интеллектуальных систем выполнять'
-                         ' творческие функции, которые традиционно считаются прерогативой человека; наука и технология'
-                         ' создания интеллектуальных машин, особенно интеллектуальных компьютерных программ')
+# ---------- TG02-1. Напишите код для сохранения всех фото, которые отправляет пользователь боту в папке img ----------
 
-
-# Декоратор, регистрирующий обработчик для сообщений, содержащих фотографии
 @dp.message(F.photo)
 async def react_photo(message: Message):
     answer_list = ['Ого, какая фотка!', 'Непонятно, что это такое', 'Не отправляй мне такое больше']
@@ -102,47 +123,39 @@ async def react_photo(message: Message):
     await bot.download(message.photo[-1], destination=f'img/{message.photo[-1].file_id}.jpg')
 
 
-# @dp.message(Command('photo', prefix='&'))
-@dp.message(Command('photo'))
-async def photo(message: Message):
-    photos = ["https://gallerix.ru/pic/_EX/1593896443/655331420.jpeg",
-              "https://sr.gallerix.ru/M/1161425349/2468.jpg",
-              "https://sr.gallerix.ru/V/369985082/2129753821.jpg",
-              "https://sr.gallerix.ru/D/825575191/1663997468.jpg",
-              "https://sr.gallerix.ru/_EX/1124510458/768903337.jpg",
-              ]
-    random_photo = random.choice(photos)
-    await message.answer_photo(photo=random_photo, caption='Это супер крутая картинка')
+# ---------- TG02-2. Отправьте с помощью бота голосовое сообщение ----------
+
+def text_to_voice(text_message):
+    voice_file_name = "voice_message.ogg"
+    tts = gTTS(text=text_message, lang='ru')
+    tts.save(voice_file_name)
+    voice_file = FSInputFile(voice_file_name)
+    return voice_file, voice_file_name
 
 
-# Декоратор, регистрирующий обработчик для команды /help
-@dp.message(Command('help'))
-async def f_help(message: Message):
-    await message.answer(
-        "Этот бот умеет выполнять команды:\n/start\n/help\n/photo\n/meteo\n/video\n/audio\n/training\n/voice\n/doc")
+@dp.message(Command('voice'))
+async def voice(message: Message):
+    voice_file, voice_file_name = text_to_voice(input_text)
+    await message.answer_voice(voice_file)
+    os.remove(voice_file_name)
 
 
-# Декоратор, регистрирующий обработчик для команды /start
-@dp.message(CommandStart())
-async def start(message: Message):
-    await message.answer(f"Приветик, {message.from_user.first_name}!")
+# ---------- TG02-3. Напишите код для перевода любого текста, введённого пользователем, на английский язык ----------
 
+def translate_text_en(ru_text):
+    translator = Translator()
+    en_text = translator.translate(ru_text, src='ru', dest='en').text
+    return en_text
 
-# @dp.message()
-# async def start(message: Message):
-#     await message.answer("Я тебе ответил")
-
-# @dp.message()
-# async def start(message: Message):
-#     await message.send_copy(chat_id=message.chat.id)
 
 @dp.message()
 async def start(message: Message):
-    if message.text.lower() == 'test':
-        await message.answer('Тестируем')
+    global input_text
+    # Сохраняем текст для команды /voice
+    input_text = message.text
+    await message.answer(translate_text_en(message.text))
 
 
-# Асинхронная функция, которая запускает поллинг бота. Поллинг – это метод получения новых сообщений от сервера Telegram
 async def main():
     await dp.start_polling(bot)
 
