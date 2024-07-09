@@ -34,7 +34,7 @@ async def aitext(message: Message):
                          ' творческие функции, которые традиционно считаются прерогативой человека; наука и технология'
                          ' создания интеллектуальных машин, особенно интеллектуальных компьютерных программ')
 
-
+# @dp.message(Command('photo', prefix='&'))
 @dp.message(Command('photo'))
 async def photo(message: Message):
     photos = ["https://sr.gallerix.ru/_EX/1593896443/655331420.jpg",
@@ -154,6 +154,16 @@ async def start(message: Message):
     # Сохраняем текст для команды /voice
     input_text = message.text
     await message.answer(translate_text_en(message.text))
+
+
+# @dp.message()
+# async def start(message: Message):
+#     await message.answer("Я тебе ответил")
+
+# Эхо-бот
+# @dp.message()
+# async def start(message: Message):
+#     await message.send_copy(chat_id=message.chat.id)
 
 
 async def main():
