@@ -57,7 +57,7 @@ async def voice(message: Message):
 
 @dp.message(Command('doc'))
 async def doc(message: Message):
-    doc_file = FSInputFile("media/100 questions.pdf")
+    doc_file = FSInputFile("media/doc.pdf")
     await bot.send_document(message.chat.id, doc_file)
 
 
